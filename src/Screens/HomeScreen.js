@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { mockPosts } from '../Firebase/config';
 
-export default function HomeScreen() {
+export default function HomeScreen({ currentUser }) {
   const [posts, setPosts] = useState(mockPosts);
   const [newPost, setNewPost] = useState('');
   const [commentText, setCommentText] = useState('');
   const [activeComment, setActiveComment] = useState(null);
   const [error, setError] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const addNotification = (msg) => {
+    const notif = { id: Date.now().toString(), msg, time: new Date().toLocaleTimeString() };
+    setNotifications(prev => [notif, ...prev]);
+  };
 
   const handleAddPost = () => {
     if (newPost === '') {
@@ -17,7 +24,7 @@ export default function HomeScreen() {
     setError('');
     const post = {
       id: Date.now().toString(),
-      username: 'You',
+      username: currentUser || 'You',
       content: newPost,
       likes: 0,
       likedByMe: false,
@@ -28,21 +35,26 @@ export default function HomeScreen() {
     setNewPost('');
   };
 
-  const handleLike = (id) => {
+  const handleLike = (id, username) => {
     setPosts(posts.map(p =>
       p.id === id
         ? { ...p, likes: p.likedByMe ? p.likes - 1 : p.likes + 1, likedByMe: !p.likedByMe }
         : p
     ));
+    const post = posts.find(p => p.id === id);
+    if (!post.likedByMe) {
+      addNotification(`You liked ${username}'s post! ❤️`);
+    }
   };
 
-  const handleAddComment = (id) => {
+  const handleAddComment = (id, username) => {
     if (commentText === '') return;
     setPosts(posts.map(p =>
       p.id === id
         ? { ...p, comments: [...p.comments, { text: commentText, user: 'You' }] }
         : p
     ));
+    addNotification(`You commented on ${username}'s post! 💬`);
     setCommentText('');
     setActiveComment(null);
   };
@@ -52,9 +64,9 @@ export default function HomeScreen() {
       <Text style={styles.username}>{item.username}</Text>
       <Text style={styles.content}>{item.content}</Text>
       <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(item.id)}>
+        <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(item.id, item.username)}>
           <Text style={[styles.likeText, item.likedByMe && styles.liked]}>
             ❤️ {item.likes} Likes
           </Text>
@@ -79,7 +91,7 @@ export default function HomeScreen() {
             value={commentText}
             onChangeText={setCommentText}
           />
-          <TouchableOpacity onPress={() => handleAddComment(item.id)} style={styles.commentSubmit}>
+          <TouchableOpacity onPress={() => handleAddComment(item.id, item.username)} style={styles.commentSubmit}>
             <Text style={styles.commentSubmitText}>Post</Text>
           </TouchableOpacity>
         </View>
@@ -89,7 +101,37 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Social Connect 🌐</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Social Connect 🌐</Text>
+        <TouchableOpacity onPress={() => setShowNotifications(!showNotifications)} style={styles.notifBtn}>
+          <Text style={styles.notifIcon}>🔔</Text>
+          {notifications.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{notifications.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {showNotifications && (
+        <View style={styles.notifPanel}>
+          <Text style={styles.notifTitle}>Notifications</Text>
+          {notifications.length === 0 ? (
+            <Text style={styles.noNotif}>No notifications yet</Text>
+          ) : (
+            notifications.map(n => (
+              <View key={n.id} style={styles.notifItem}>
+                <Text style={styles.notifMsg}>{n.msg}</Text>
+                <Text style={styles.notifTime}>{n.time}</Text>
+              </View>
+            ))
+          )}
+          <TouchableOpacity onPress={() => { setNotifications([]); setShowNotifications(false); }}>
+            <Text style={styles.clearNotif}>Clear All</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TextInput
         style={styles.input}
@@ -111,7 +153,19 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#f5f5f5' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#6200ee', marginBottom: 15, textAlign: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#6200ee' },
+  notifBtn: { position: 'relative', padding: 5 },
+  notifIcon: { fontSize: 24 },
+  badge: { position: 'absolute', top: 0, right: 0, backgroundColor: 'red', borderRadius: 10, width: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  notifPanel: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 15, elevation: 3 },
+  notifTitle: { fontSize: 18, fontWeight: 'bold', color: '#6200ee', marginBottom: 10 },
+  noNotif: { color: '#999', textAlign: 'center' },
+  notifItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  notifMsg: { fontSize: 14, color: '#333' },
+  notifTime: { fontSize: 11, color: '#999' },
+  clearNotif: { color: 'red', textAlign: 'center', marginTop: 10, fontWeight: 'bold' },
   error: { color: 'red', textAlign: 'center', marginBottom: 10 },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, marginBottom: 10, backgroundColor: '#fff' },
   button: { backgroundColor: '#6200ee', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
