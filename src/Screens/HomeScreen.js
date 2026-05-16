@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { mockPosts } from '../Firebase/config';
 
 export default function HomeScreen({ currentUser }) {
@@ -10,6 +10,22 @@ export default function HomeScreen({ currentUser }) {
   const [error, setError] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const scaleAnims = useRef({});
+
+  const getAnim = (id) => {
+    if (!scaleAnims.current[id]) {
+      scaleAnims.current[id] = new Animated.Value(1);
+    }
+    return scaleAnims.current[id];
+  };
+
+  const animateLike = (id) => {
+    const anim = getAnim(id);
+    Animated.sequence([
+      Animated.spring(anim, { toValue: 1.4, useNativeDriver: true }),
+      Animated.spring(anim, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+  };
 
   const addNotification = (msg) => {
     const notif = { id: Date.now().toString(), msg, time: new Date().toLocaleTimeString() };
@@ -17,10 +33,7 @@ export default function HomeScreen({ currentUser }) {
   };
 
   const handleAddPost = () => {
-    if (newPost === '') {
-      setError('Please write something!');
-      return;
-    }
+    if (newPost === '') { setError('Please write something!'); return; }
     setError('');
     const post = {
       id: Date.now().toString(),
@@ -36,15 +49,14 @@ export default function HomeScreen({ currentUser }) {
   };
 
   const handleLike = (id, username) => {
+    animateLike(id);
     setPosts(posts.map(p =>
       p.id === id
         ? { ...p, likes: p.likedByMe ? p.likes - 1 : p.likes + 1, likedByMe: !p.likedByMe }
         : p
     ));
     const post = posts.find(p => p.id === id);
-    if (!post.likedByMe) {
-      addNotification(`You liked ${username}'s post! ❤️`);
-    }
+    if (!post.likedByMe) addNotification(`You liked ${username}'s post! ❤️`);
   };
 
   const handleAddComment = (id, username) => {
@@ -61,16 +73,25 @@ export default function HomeScreen({ currentUser }) {
 
   const renderPost = ({ item }) => (
     <View style={styles.post}>
-      <Text style={styles.username}>{item.username}</Text>
+      <View style={styles.postHeader}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{item.username[0]}</Text>
+        </View>
+        <View>
+          <Text style={styles.username}>{item.username}</Text>
+          <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
+        </View>
+      </View>
       <Text style={styles.content}>{item.content}</Text>
-      <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(item.id, item.username)}>
-          <Text style={[styles.likeText, item.likedByMe && styles.liked]}>
-            ❤️ {item.likes} Likes
-          </Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: getAnim(item.id) }] }}>
+          <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(item.id, item.username)}>
+            <Text style={[styles.likeText, item.likedByMe && styles.liked]}>
+              ❤️ {item.likes} Likes
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
         <TouchableOpacity style={styles.commentBtn} onPress={() => setActiveComment(activeComment === item.id ? null : item.id)}>
           <Text style={styles.commentBtnText}>💬 {item.comments.length} Comments</Text>
         </TouchableOpacity>
@@ -159,7 +180,7 @@ const styles = StyleSheet.create({
   notifIcon: { fontSize: 24 },
   badge: { position: 'absolute', top: 0, right: 0, backgroundColor: 'red', borderRadius: 10, width: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  notifPanel: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 15, elevation: 3 },
+  notifPanel: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 15 },
   notifTitle: { fontSize: 18, fontWeight: 'bold', color: '#6200ee', marginBottom: 10 },
   noNotif: { color: '#999', textAlign: 'center' },
   notifItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
@@ -170,11 +191,14 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, marginBottom: 10, backgroundColor: '#fff' },
   button: { backgroundColor: '#6200ee', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
   buttonText: { color: '#fff', fontWeight: 'bold' },
-  post: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, elevation: 2 },
+  post: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
+  postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   username: { fontWeight: 'bold', fontSize: 16, color: '#6200ee' },
-  content: { fontSize: 15, marginVertical: 8 },
-  timestamp: { fontSize: 11, color: '#999', marginBottom: 8 },
-  actions: { flexDirection: 'row', gap: 15 },
+  content: { fontSize: 15, marginVertical: 8, color: '#333' },
+  timestamp: { fontSize: 11, color: '#999' },
+  actions: { flexDirection: 'row', gap: 15, marginTop: 8 },
   likeBtn: { padding: 5 },
   likeText: { fontSize: 14, color: '#555' },
   liked: { color: 'red' },
