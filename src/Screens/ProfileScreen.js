@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   const [name, setName] = useState('Your Name');
   const [bio, setBio] = useState('Your bio here...');
   const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSave = () => {
+    setError('');
+    setSuccess('');
     if (name === '') {
-      Alert.alert('Error', 'Name cannot be empty!');
+      setError('Name cannot be empty!');
       return;
     }
     setIsEditing(false);
-    Alert.alert('Success', 'Profile updated!');
+    setSuccess('Profile updated!');
+    setTimeout(() => setSuccess(''), 2000);
   };
 
   return (
@@ -20,6 +25,9 @@ export default function ProfileScreen() {
       <View style={styles.avatarContainer}>
         <Text style={styles.avatar}>👤</Text>
       </View>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {success ? <Text style={styles.success}>{success}</Text> : null}
 
       <Text style={styles.label}>Name</Text>
       {isEditing ? (
@@ -61,6 +69,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 20 },
   avatarContainer: { alignItems: 'center', marginBottom: 20, marginTop: 20 },
   avatar: { fontSize: 80 },
+  error: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  success: { color: 'green', textAlign: 'center', marginBottom: 10 },
   label: { fontSize: 14, color: '#999', marginBottom: 5, marginTop: 15 },
   value: { fontSize: 16, color: '#333', marginBottom: 5 },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, fontSize: 16, marginBottom: 5 },

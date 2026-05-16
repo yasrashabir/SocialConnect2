@@ -1,4 +1,6 @@
-export const mockUsers = [];
+export const mockUsers = [
+  { name: 'Test User', email: 'test@test.com', password: '123456', bio: '', profilePicture: null }
+];
 
 export const mockPosts = [
   {
@@ -6,6 +8,7 @@ export const mockPosts = [
     username: 'Ali Hassan',
     content: 'Hello Social Connect! 👋',
     likes: 5,
+    likedByMe: false,
     comments: [],
     timestamp: new Date().toISOString(),
   },
@@ -14,6 +17,7 @@ export const mockPosts = [
     username: 'Sara Khan',
     content: 'This app is amazing! 🔥',
     likes: 12,
+    likedByMe: false,
     comments: [],
     timestamp: new Date().toISOString(),
   }
