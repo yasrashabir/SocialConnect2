@@ -42,7 +42,7 @@ export default function ProfileScreen({ currentUser }) {
         <TouchableOpacity style={[styles.tab, activeTab === 'profile' && styles.activeTab]} onPress={() => setActiveTab('profile')}>
           <Text style={[styles.tabText, activeTab === 'profile' && styles.activeTabText]}>My Profile</Text>
         </TouchableOpacity>
-<TouchableOpacity style={[styles.tab, activeTab === 'users' && styles.activeTab]} onPress={() => setActiveTab('users'); }}>
+<TouchableOpacity style={[styles.tab, activeTab === 'users' && styles.activeTab]} onPress={() => setActiveTab('users')}>
           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>Find Users</Text>
         </TouchableOpacity>
       </View>
