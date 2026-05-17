@@ -9,19 +9,20 @@ import SignupScreen from '../Screens/SignupScreen';
 export default function AppNavigator() {
   const [screen, setScreen] = useState('Login');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState('');
 
   if (!isLoggedIn) {
     if (screen === 'Login') {
-      return <LoginScreen setIsLoggedIn={setIsLoggedIn} goToSignup={() => setScreen('Signup')} />;
+      return <LoginScreen setIsLoggedIn={setIsLoggedIn} goToSignup={() => setScreen('Signup')} setCurrentUser={setCurrentUser} />;
     }
     return <SignupScreen goToLogin={() => setScreen('Login')} />;
   }
 
   const renderScreen = () => {
-    if (screen === 'Home') return <HomeScreen />;
-    if (screen === 'Profile') return <ProfileScreen />;
-if (screen === 'Settings') return <SettingsScreen setIsLoggedIn={setIsLoggedIn} goToProfile={() => setScreen('Profile')} />;
-    return <HomeScreen />;
+    if (screen === 'Home') return <HomeScreen currentUser={currentUser} />;
+    if (screen === 'Profile') return <ProfileScreen currentUser={currentUser} />;
+    if (screen === 'Settings') return <SettingsScreen setIsLoggedIn={setIsLoggedIn} goToProfile={() => setScreen('Profile')} />;
+    return <HomeScreen currentUser={currentUser} />;
   };
 
   return (

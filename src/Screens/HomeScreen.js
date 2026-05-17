@@ -10,6 +10,8 @@ export default function HomeScreen({ currentUser }) {
   const [error, setError] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [editText, setEditText] = useState('');
   const scaleAnims = useRef({});
 
   const getAnim = (id) => {
@@ -71,18 +73,63 @@ export default function HomeScreen({ currentUser }) {
     setActiveComment(null);
   };
 
+  const handleDeletePost = (id) => {
+    setPosts(posts.filter(p => p.id !== id));
+    addNotification('Post deleted! 🗑️');
+  };
+
+  const handleEditPost = (id) => {
+    if (editText === '') return;
+    setPosts(posts.map(p =>
+      p.id === id ? { ...p, content: editText } : p
+    ));
+    setEditingPost(null);
+    setEditText('');
+    addNotification('Post updated! ✏️');
+  };
+
   const renderPost = ({ item }) => (
     <View style={styles.post}>
       <View style={styles.postHeader}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{item.username[0]}</Text>
         </View>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.username}>{item.username}</Text>
           <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
         </View>
+        {item.username === (currentUser || 'You') && (
+          <View style={styles.postActions}>
+            <TouchableOpacity onPress={() => { setEditingPost(item.id); setEditText(item.content); }} style={styles.editBtn}>
+              <Text style={styles.editBtnText}>✏️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDeletePost(item.id)} style={styles.deleteBtn}>
+              <Text style={styles.deleteBtnText}>🗑️</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      <Text style={styles.content}>{item.content}</Text>
+
+      {editingPost === item.id ? (
+        <View style={styles.editForm}>
+          <TextInput
+            style={styles.editInput}
+            value={editText}
+            onChangeText={setEditText}
+            multiline
+          />
+          <View style={styles.editActions}>
+            <TouchableOpacity onPress={() => handleEditPost(item.id)} style={styles.saveBtn}>
+              <Text style={styles.saveBtnText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setEditingPost(null)} style={styles.cancelBtn}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.content}>{item.content}</Text>
+      )}
 
       <View style={styles.actions}>
         <Animated.View style={{ transform: [{ scale: getAnim(item.id) }] }}>
@@ -196,8 +243,20 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   username: { fontWeight: 'bold', fontSize: 16, color: '#6200ee' },
-  content: { fontSize: 15, marginVertical: 8, color: '#333' },
   timestamp: { fontSize: 11, color: '#999' },
+  postActions: { flexDirection: 'row', gap: 8 },
+  editBtn: { padding: 5 },
+  editBtnText: { fontSize: 16 },
+  deleteBtn: { padding: 5 },
+  deleteBtnText: { fontSize: 16 },
+  editForm: { marginVertical: 8 },
+  editInput: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, marginBottom: 8, backgroundColor: '#f9f9f9' },
+  editActions: { flexDirection: 'row', gap: 8 },
+  saveBtn: { backgroundColor: '#6200ee', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' },
+  saveBtnText: { color: '#fff', fontWeight: 'bold' },
+  cancelBtn: { backgroundColor: '#ddd', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' },
+  cancelBtnText: { color: '#333', fontWeight: 'bold' },
+  content: { fontSize: 15, marginVertical: 8, color: '#333' },
   actions: { flexDirection: 'row', gap: 15, marginTop: 8 },
   likeBtn: { padding: 5 },
   likeText: { fontSize: 14, color: '#555' },

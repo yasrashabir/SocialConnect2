@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { mockUsers } from '../Firebase/config';
 
-export default function LoginScreen({ setIsLoggedIn, goToSignup }) {
+export default function LoginScreen({ setIsLoggedIn, goToSignup, setCurrentUser }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,6 +15,7 @@ export default function LoginScreen({ setIsLoggedIn, goToSignup }) {
     }
     const user = mockUsers.find(u => u.email === email && u.password === password);
     if (user) {
+      setCurrentUser(user.name);
       setIsLoggedIn(true);
     } else {
       setError('Invalid email or password');
