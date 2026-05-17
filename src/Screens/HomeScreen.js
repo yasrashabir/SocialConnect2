@@ -259,10 +259,14 @@ export default function HomeScreen({ currentUser }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
+     <FlatList
         data={posts}
         keyExtractor={item => item.id}
         renderItem={renderPost}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        removeClippedSubviews={true}
       />
     </View>
   );
