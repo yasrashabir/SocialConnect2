@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
-import { Animated, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { mockPosts } from '../Firebase/config';
 
 export default function HomeScreen({ currentUser }) {
   const [posts, setPosts] = useState(mockPosts);
   const [newPost, setNewPost] = useState('');
+  const [newPostImage, setNewPostImage] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [activeComment, setActiveComment] = useState(null);
   const [error, setError] = useState('');
@@ -13,6 +14,7 @@ export default function HomeScreen({ currentUser }) {
   const [editingPost, setEditingPost] = useState(null);
   const [editText, setEditText] = useState('');
   const scaleAnims = useRef({});
+  const fileInputRef = useRef(null);
 
   const getAnim = (id) => {
     if (!scaleAnims.current[id]) {
@@ -34,13 +36,29 @@ export default function HomeScreen({ currentUser }) {
     setNotifications(prev => [notif, ...prev]);
   };
 
+  const handlePickImage = () => {
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => setNewPostImage(event.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddPost = () => {
-    if (newPost === '') { setError('Please write something!'); return; }
+    if (newPost === '' && !newPostImage) { setError('Please write something or add an image!'); return; }
     setError('');
     const post = {
       id: Date.now().toString(),
       username: currentUser || 'You',
       content: newPost,
+      image: newPostImage,
       likes: 0,
       likedByMe: false,
       comments: [],
@@ -48,6 +66,7 @@ export default function HomeScreen({ currentUser }) {
     };
     setPosts([post, ...posts]);
     setNewPost('');
+    setNewPostImage(null);
   };
 
   const handleLike = (id, username) => {
@@ -128,7 +147,10 @@ export default function HomeScreen({ currentUser }) {
           </View>
         </View>
       ) : (
-        <Text style={styles.content}>{item.content}</Text>
+        <>
+          {item.content ? <Text style={styles.content}>{item.content}</Text> : null}
+          {item.image && <Image source={{ uri: item.image }} style={styles.postImage} />}
+        </>
       )}
 
       <View style={styles.actions}>
@@ -201,15 +223,42 @@ export default function HomeScreen({ currentUser }) {
       )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {newPostImage && (
+        <View style={styles.previewContainer}>
+          <Image source={{ uri: newPostImage }} style={styles.previewImage} />
+          <TouchableOpacity style={styles.removeImageBtn} onPress={() => setNewPostImage(null)}>
+            <Text style={styles.removeImageText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <TextInput
         style={styles.input}
         placeholder="What's on your mind?"
         value={newPost}
         onChangeText={setNewPost}
       />
-      <TouchableOpacity style={styles.button} onPress={handleAddPost}>
-        <Text style={styles.buttonText}>Post</Text>
-      </TouchableOpacity>
+
+      {Platform.OS === 'web' && (
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
+      )}
+
+      <View style={styles.postRow}>
+        <TouchableOpacity style={styles.imageBtn} onPress={handlePickImage}>
+          <Text style={styles.imageBtnText}>📷 Add Photo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleAddPost}>
+          <Text style={styles.buttonText}>Post</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={posts}
         keyExtractor={item => item.id}
@@ -235,10 +284,17 @@ const styles = StyleSheet.create({
   notifTime: { fontSize: 11, color: '#999' },
   clearNotif: { color: 'red', textAlign: 'center', marginTop: 10, fontWeight: 'bold' },
   error: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  previewContainer: { position: 'relative', marginBottom: 10 },
+  previewImage: { width: '100%', height: 150, borderRadius: 10 },
+  removeImageBtn: { position: 'absolute', top: 5, right: 5, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 15, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
+  removeImageText: { color: '#fff', fontWeight: 'bold' },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, marginBottom: 10, backgroundColor: '#fff' },
-  button: { backgroundColor: '#6200ee', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
+  postRow: { flexDirection: 'row', gap: 8, marginBottom: 15 },
+  imageBtn: { flex: 1, backgroundColor: '#f0f0f0', padding: 12, borderRadius: 8, alignItems: 'center' },
+  imageBtnText: { color: '#6200ee', fontWeight: 'bold' },
+  button: { flex: 1, backgroundColor: '#6200ee', padding: 12, borderRadius: 8, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
-  post: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
+  post: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10 },
   postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
@@ -257,6 +313,7 @@ const styles = StyleSheet.create({
   cancelBtn: { backgroundColor: '#ddd', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' },
   cancelBtnText: { color: '#333', fontWeight: 'bold' },
   content: { fontSize: 15, marginVertical: 8, color: '#333' },
+  postImage: { width: '100%', height: 200, borderRadius: 10, marginTop: 8 },
   actions: { flexDirection: 'row', gap: 15, marginTop: 8 },
   likeBtn: { padding: 5 },
   likeText: { fontSize: 14, color: '#555' },
