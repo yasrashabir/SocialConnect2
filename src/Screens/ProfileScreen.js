@@ -1,21 +1,38 @@
-import { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { mockUsers } from '../Firebase/config';
 
 export default function ProfileScreen({ currentUser }) {
   const [name, setName] = useState(currentUser || 'Your Name');
   const [bio, setBio] = useState('Your bio here...');
+  const [profilePic, setProfilePic] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [followedUsers, setFollowedUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('profile');
   const [searchQuery, setSearchQuery] = useState('');
+  const fileInputRef = useRef(null);
 
   const otherUsers = mockUsers.filter(u => u.name !== name);
   const filteredUsers = otherUsers.filter(u =>
     u.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handlePickImage = () => {
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => setProfilePic(event.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleFollow = (userName) => {
     if (followedUsers.includes(userName)) {
@@ -48,12 +65,31 @@ export default function ProfileScreen({ currentUser }) {
         </TouchableOpacity>
       </View>
 
+      {Platform.OS === 'web' && (
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
+      )}
+
       {activeTab === 'profile' ? (
         <View>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{name[0]}</Text>
-            </View>
+            <TouchableOpacity onPress={() => isEditing && handlePickImage()} style={styles.avatar}>
+              {profilePic ? (
+                <Image source={{ uri: profilePic }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{name[0]}</Text>
+              )}
+              {isEditing && (
+                <View style={styles.editBadge}>
+                  <Text style={styles.editBadgeText}>📷</Text>
+                </View>
+              )}
+            </TouchableOpacity>
             <Text style={styles.followCount}>{followedUsers.length} Following</Text>
           </View>
 
@@ -130,8 +166,11 @@ const styles = StyleSheet.create({
   tabText: { color: '#6200ee', fontWeight: 'bold' },
   activeTabText: { color: '#fff' },
   avatarContainer: { alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginBottom: 10, position: 'relative', overflow: 'hidden' },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 32 },
+  editBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#fff', borderRadius: 12, width: 24, height: 24, justifyContent: 'center', alignItems: 'center' },
+  editBadgeText: { fontSize: 12 },
   followCount: { color: '#6200ee', fontWeight: 'bold', fontSize: 16 },
   error: { color: 'red', textAlign: 'center', marginBottom: 10 },
   success: { color: 'green', textAlign: 'center', marginBottom: 10 },
