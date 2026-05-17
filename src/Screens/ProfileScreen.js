@@ -3,7 +3,6 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { mockUsers } from '../Firebase/config';
 
 export default function ProfileScreen({ currentUser }) {
-  console.log('PROFILE SCREEN LOADED - NEW VERSION');
   const [name, setName] = useState(currentUser || 'Your Name');
   const [bio, setBio] = useState('Your bio here...');
   const [isEditing, setIsEditing] = useState(false);
@@ -11,8 +10,12 @@ export default function ProfileScreen({ currentUser }) {
   const [success, setSuccess] = useState('');
   const [followedUsers, setFollowedUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('profile');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const otherUsers = mockUsers.filter(u => u.name !== name);
+  const filteredUsers = otherUsers.filter(u =>
+    u.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleFollow = (userName) => {
     if (followedUsers.includes(userName)) {
@@ -36,13 +39,11 @@ export default function ProfileScreen({ currentUser }) {
 
   return (
     <View style={styles.container}>
-      
-        <View style={styles.tabs}>
-        
+      <View style={styles.tabs}>
         <TouchableOpacity style={[styles.tab, activeTab === 'profile' && styles.activeTab]} onPress={() => setActiveTab('profile')}>
           <Text style={[styles.tabText, activeTab === 'profile' && styles.activeTabText]}>My Profile</Text>
         </TouchableOpacity>
-<TouchableOpacity style={[styles.tab, activeTab === 'users' && styles.activeTab]} onPress={() => setActiveTab('users')}>
+        <TouchableOpacity style={[styles.tab, activeTab === 'users' && styles.activeTab]} onPress={() => setActiveTab('users')}>
           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>Find Users</Text>
         </TouchableOpacity>
       </View>
@@ -85,26 +86,36 @@ export default function ProfileScreen({ currentUser }) {
         </View>
       ) : (
         <View>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Search users..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
           <Text style={styles.sectionTitle}>People You May Know</Text>
-          {otherUsers.map((user, i) => (
-            <View key={i} style={styles.userCard}>
-              <View style={styles.userAvatar}>
-                <Text style={styles.avatarText}>{user.name[0]}</Text>
+          {filteredUsers.length === 0 ? (
+            <Text style={styles.noResults}>No users found</Text>
+          ) : (
+            filteredUsers.map((user, i) => (
+              <View key={i} style={styles.userCard}>
+                <View style={styles.userAvatar}>
+                  <Text style={styles.avatarText}>{user.name[0]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text style={styles.userBio}>{user.bio}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.followBtn, followedUsers.includes(user.name) && styles.unfollowBtn]}
+                  onPress={() => handleFollow(user.name)}
+                >
+                  <Text style={styles.followBtnText}>
+                    {followedUsers.includes(user.name) ? 'Unfollow' : 'Follow'}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userBio}>{user.bio}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.followBtn, followedUsers.includes(user.name) && styles.unfollowBtn]}
-                onPress={() => handleFollow(user.name)}
-              >
-                <Text style={styles.followBtnText}>
-                  {followedUsers.includes(user.name) ? 'Unfollow' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+            ))
+          )}
         </View>
       )}
     </View>
@@ -113,8 +124,8 @@ export default function ProfileScreen({ currentUser }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 20 },
-tabs: { flexDirection: 'row', marginBottom: 20, borderRadius: 10, borderWidth: 1, borderColor: '#6200ee', minHeight: 50 },
-tabs: { flexDirection: 'row', marginBottom: 20, marginTop: 50, borderRadius: 10, borderWidth: 1, borderColor: '#6200ee', minHeight: 50, width: '100%', zIndex: 10, position: 'relative' },
+  tabs: { flexDirection: 'row', marginBottom: 20, marginTop: 50, borderRadius: 10, borderWidth: 1, borderColor: '#6200ee', minHeight: 50, width: '100%', zIndex: 10, position: 'relative' },
+  tab: { flex: 1, padding: 10, alignItems: 'center', backgroundColor: '#fff', minWidth: 100 },
   activeTab: { backgroundColor: '#6200ee' },
   tabText: { color: '#6200ee', fontWeight: 'bold' },
   activeTabText: { color: '#fff' },
@@ -130,7 +141,9 @@ tabs: { flexDirection: 'row', marginBottom: 20, marginTop: 50, borderRadius: 10,
   bioInput: { height: 80, textAlignVertical: 'top' },
   button: { backgroundColor: '#6200ee', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 25 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  searchInput: { borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 25, marginBottom: 15, backgroundColor: '#f9f9f9', fontSize: 15 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  noResults: { textAlign: 'center', color: '#999', marginTop: 20 },
   userCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f9f9', padding: 12, borderRadius: 10, marginBottom: 10 },
   userAvatar: { width: 45, height: 45, borderRadius: 22, backgroundColor: '#6200ee', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   userName: { fontWeight: 'bold', fontSize: 15, color: '#333' },
